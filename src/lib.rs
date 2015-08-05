@@ -1,13 +1,62 @@
+//! This module provides a pretty straightfoward interface for converting
+//! [Forsyth-Edwards notation][1] (FEN) into the state of a game of chess and
+//! back.
+//!
+//! FEN is a way of representing a board a string. This crate provides one such
+//! representation, `fen::BoardState`. If you want to be able to read FEN, you
+//! will to need to create a way to convert `BoardState` to your own board
+//! representation.  If you want to export FEN, you will need to convert your
+//! own board representation to `BoardState`.
+//!
+//! [1]: https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
+
+/// The state of a board. You can convert this to and from FEN.
 #[derive(Debug, Eq, PartialEq)]
 pub struct BoardState {
+    /// The locations of pieces on the board. This vector must be guaranteed to
+    /// contain 64 elements.
+    ///
+    /// Indices start at the bottom left of the board, going from left to right
+    /// then down to up. Index 0 represents a1, index 1 represents b1, index
+    /// 8 represents a2, ..., index 63 represents h8.
+    ///
+    /// If `pieces[n]` is `None`, then that means there is no piece on the `n`th
+    /// square.
     pub pieces: Vec<Option<Piece>>,
+
+    /// The side that will play next. Since white goes first in standard chess,
+    /// this should be `Color::White` in the initial position.
     pub side_to_play: Color,
+
+    /// Whether white can still castle kingside at some time.
     pub white_can_oo: bool,
+
+    /// Whether white can still castle queenside at some time.
     pub white_can_ooo: bool,
+
+    /// Whether black can still castle kingside at some time.
     pub black_can_oo: bool,
+
+    /// Whether black can still castle queenside at some time.
     pub black_can_ooo: bool,
+
+    /// The en passant target square. If the last move was a two-square pawn
+    /// move, this will be the position "behind" the pawn. Otherwise, this will
+    /// be `None`.
+    ///
+    /// See the documentation for `BoardState.pieces` for how squares on the
+    /// board are indexed.
     pub en_passant_square: Option<u8>,
+
+    /// Number of half-moves (aka "ply") since the last capture or pawn move. If
+    /// this number is greater than or equal to 50, then either side may claim
+    /// draw by the [fifty-move rule][1].
+    ///
+    /// [1]: https://en.wikipedia.org/wiki/Fifty-move_rule
     pub halfmove_clock: u64,
+
+    /// Number of full moves since the beginning of the game. This value begins
+    /// at 1 and is incremented after black makes a move.
     pub fullmove_number: u64
 }
 
@@ -48,6 +97,18 @@ pub enum FenError<'a> {
 }
 
 impl BoardState {
+    /// Create a `BoardState` from a string in Forsyth-Edwards notation.
+    ///
+    /// ```
+    /// // this represents the board after the move 1. e4
+    /// let fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+    /// let board = fen::BoardState::from_fen(fen).unwrap();
+    ///
+    /// // 'e' is the fourth file, '3' is the second rank (due to zero-indexing)
+    /// //
+    /// // See docs for BoardState.pieces for information about indexing
+    /// assert_eq!(board.en_passant_square, Some(4 + 2 * 8));
+    /// ```
     pub fn from_fen<'a>(fen: &'a str) -> FenResult<'a, BoardState> {
         let parts: Vec<_> = fen.split(' ').collect();
         if parts.len() != 6 {
@@ -192,6 +253,13 @@ impl BoardState {
         }
     }
 
+    /// Convert a BoardState into a string in Forsyth-Edwards notation.
+    ///
+    /// ```
+    /// let fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+    /// let board = fen::BoardState::from_fen(fen).unwrap();
+    /// assert_eq!(fen, board.to_fen());
+    /// ```
     pub fn to_fen(&self) -> String {
         let placement = self.make_placement();
         let side_to_play = self.make_side_to_play();
