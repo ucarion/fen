@@ -85,13 +85,16 @@ impl BoardState {
 
         for (rank, pieces) in lines.iter().rev().enumerate() {
             let mut file = 0;
+
             for piece_char in pieces.chars() {
                 match piece_char.to_digit(10) {
+                    // This is indicating a few blanks
                     Some(n) => {
                         try!(Self::increment_file(&mut file, n as usize, pieces));
                     }
+
+                    // This is indicating a piece
                     None => {
-                        // this is a piece
                         match Piece::from_char(piece_char) {
                             Some(piece) => {
                                 placement[rank * 8 + file] = Some(piece);
@@ -108,6 +111,8 @@ impl BoardState {
         Ok(placement)
     }
 
+    // Attempt to increment `file` by `n`. If this causes file to overflow, then
+    // an error is returned.
     fn increment_file<'a>(file: &mut usize, n: usize, rank: &'a str) -> FenResult<'a, ()> {
         *file += n;
         if *file > 8 {
@@ -225,6 +230,8 @@ impl BoardState {
                 placement.push_str(&blanks.to_string());
             }
 
+            // rank = 0 is the last rank displayed, and does not need a '/'
+            // separator
             if rank != 0 {
                 placement.push('/');
             }
