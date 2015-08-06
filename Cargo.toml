@@ -2,3 +2,7 @@
 name = "fen"
 version = "0.1.0"
 authors = ["Ulysse Carion <ulysse@ulysse.io>"]
+description = "A Forsyth-Edwards notation parser with proper error handling."
+homepage = "https://github.com/ucarion/fen"
+repository = "https://github.com/ucarion/fen.git"
+license = "MIT"
